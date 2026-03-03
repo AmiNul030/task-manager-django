@@ -1,43 +1,144 @@
 {% extends "tasks/base.html" %}
+
+{% block top_action %}
+  <a class="btn btn-primary" href="{% url 'task_add' %}">
+    <i class="bi bi-plus-lg"></i> Add Task
+  </a>
+{% endblock %}
+
 {% block content %}
-<div class="card shadow-sm">
+
+<!-- Stats -->
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card soft-shadow p-3">
+      <div class="muted small">Total</div>
+      <div class="h3 m-0">{{ total }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card soft-shadow p-3">
+      <div class="muted small">Pending</div>
+      <div class="h3 m-0">{{ pending }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card soft-shadow p-3">
+      <div class="muted small">Done</div>
+      <div class="h3 m-0">{{ done }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Search + Filters -->
+<div class="card soft-shadow mb-3">
   <div class="card-body">
-    <h3 class="mb-4">My Tasks</h3>
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-6">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input class="form-control" name="q" value="{{ q }}" placeholder="Search tasks...">
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <select class="form-select" name="status">
+          <option value="all" {% if status == "all" %}selected{% endif %}>All</option>
+          <option value="pending" {% if status == "pending" %}selected{% endif %}>Pending</option>
+          <option value="done" {% if status == "done" %}selected{% endif %}>Done</option>
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <select class="form-select" name="priority">
+          <option value="all" {% if priority == "all" %}selected{% endif %}>All priorities</option>
+          <option value="H" {% if priority == "H" %}selected{% endif %}>High</option>
+          <option value="M" {% if priority == "M" %}selected{% endif %}>Medium</option>
+          <option value="L" {% if priority == "L" %}selected{% endif %}>Low</option>
+        </select>
+      </div>
+
+      <div class="col-12 d-flex gap-2 mt-2">
+        <button class="btn btn-outline-primary btn-sm" type="submit">Apply</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'task_list' %}">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- List -->
+<div class="card soft-shadow">
+  <div class="card-body">
 
     <div class="list-group">
       {% for task in tasks %}
-      <div class="list-group-item d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-3">
+      <div class="list-group-item task-item p-3">
+        <div class="d-flex align-items-start justify-content-between gap-3">
 
-          <!-- POST toggle (Part-1 style, no JS) -->
-          <form method="post" action="{% url 'task_toggle' task.pk %}" class="m-0">
-            {% csrf_token %}
-            <input class="form-check-input" type="checkbox"
-                   {% if task.completed %}checked{% endif %}
-                   onchange="this.form.submit()">
-          </form>
+          <div class="d-flex align-items-start gap-3">
 
-          <div>
-            <div class="{% if task.completed %}text-muted text-decoration-line-through{% endif %}">
-              {{ task.title }}
+            <!-- Toggle POST -->
+            <form method="post" action="{% url 'task_toggle' task.pk %}" class="m-0 pt-1">
+              {% csrf_token %}
+              <input class="form-check-input" type="checkbox"
+                     {% if task.completed %}checked{% endif %}
+                     onchange="this.form.submit()">
+            </form>
+
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="{% if task.completed %}text-decoration-line-through muted{% else %}title{% endif %}">
+                  {{ task.title }}
+                </div>
+
+                {% if task.completed %}
+                  <span class="pill bg-success-subtle text-success-emphasis"><i class="bi bi-check2"></i> Done</span>
+                {% else %}
+                  <span class="pill bg-warning-subtle text-warning-emphasis"><i class="bi bi-hourglass-split"></i> Pending</span>
+                {% endif %}
+
+                {% if task.priority == "H" %}
+                  <span class="pill bg-danger-subtle text-danger-emphasis"><i class="bi bi-flag-fill"></i> High</span>
+                {% elif task.priority == "M" %}
+                  <span class="pill bg-primary-subtle text-primary-emphasis"><i class="bi bi-flag"></i> Medium</span>
+                {% else %}
+                  <span class="pill bg-secondary-subtle text-secondary-emphasis"><i class="bi bi-flag"></i> Low</span>
+                {% endif %}
+
+                {% if task.due_date %}
+                  <span class="pill bg-light text-dark border">
+                    <i class="bi bi-calendar-event"></i> Due: {{ task.due_date }}
+                  </span>
+                {% endif %}
+              </div>
+
+              {% if task.description %}
+                <div class="muted small mt-1">{{ task.description }}</div>
+              {% endif %}
             </div>
-            {% if task.description %}
-              <small class="text-muted">{{ task.description }}</small>
-            {% endif %}
           </div>
-        </div>
 
-        <div class="d-flex gap-2">
-          <a class="btn btn-outline-secondary btn-sm" href="{% url 'task_edit' task.pk %}">Edit</a>
-          <a class="btn btn-outline-danger btn-sm" href="{% url 'task_delete' task.pk %}">Delete</a>
+          <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'task_edit' task.pk %}">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <a class="btn btn-outline-danger btn-sm" href="{% url 'task_delete' task.pk %}">
+              <i class="bi bi-trash"></i>
+            </a>
+          </div>
+
         </div>
       </div>
       {% empty %}
-      <div class="list-group-item text-muted">No tasks yet.</div>
+      <div class="text-center py-5">
+        <div class="h5 mb-2">No tasks found</div>
+        <div class="muted mb-3">Try changing filters or add a new task.</div>
+        <a class="btn btn-primary" href="{% url 'task_add' %}"><i class="bi bi-plus-lg"></i> Add Task</a>
+      </div>
       {% endfor %}
     </div>
 
-    <a class="btn btn-primary mt-4" href="{% url 'task_add' %}">+ Add New Task</a>
   </div>
 </div>
+
 {% endblock %}
